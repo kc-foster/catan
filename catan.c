@@ -1,4 +1,4 @@
-// Feb 14 2025
+// Feb 23 2025
 // Unfinished
 // 
 // gcc -g3 -o catan catan.c -lGLEW -lglfw -lGL -lX11 -lm
@@ -18,6 +18,7 @@
 //           'a' to initiate a trade between two players or with bank
 
 
+#define CATAN_GAME
 #include "catan.h"
 // #include "artificialCatanPlayer.h"
 
@@ -43,8 +44,6 @@ static void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 
-        int whichPlayer = myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex] - 1;
-
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         printf("mouse clicked: (x: %f, y: %f)\n", xpos, ypos);
@@ -64,7 +63,7 @@ static void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 
             if (withinXBoundary && withinYBoundary) {
 
-                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = i;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = i;
 
                 printf("settlement button pressed at: x:%f y:%f, button #%d\n", xpos, ypos, i);
 
@@ -84,7 +83,7 @@ static void mouse_callback(GLFWwindow* window, int button, int action, int mods)
 
             if (withinXBoundary && withinYBoundary) {
 
-                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = j;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = j;
 
                 printf("road button pressed at: x:%f y:%f, button #%d\n", xpos, ypos, j);
 
@@ -119,34 +118,33 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     if (!myCatanBoard.isPregame) {
 
         bool reset = false;
-        int whichPlayer = myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex];
 
         // next turn
         if (action == GLFW_PRESS && key == GLFW_KEY_N && myCatanBoard.click == false) {
 
             myCatanBoard.click = true;
-            myCatanBoard.players[whichPlayer].gameConds[NEXT_TURN_COND] = true;
+            myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[NEXT_TURN_COND] = true;
             reset = true;
 
         // place a road
         } else if (action == GLFW_PRESS && key == GLFW_KEY_R && myCatanBoard.click == false) {
 
             myCatanBoard.click = true;
-            myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND] = true;
+            myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND] = true;
             reset = true;
 
         // press t for town placement
         } else if (action == GLFW_PRESS && key == GLFW_KEY_T && myCatanBoard.click == false) {
 
             myCatanBoard.click = true;
-            myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND] = true;
+            myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND] = true;
             reset = true;
 
         // place a city
         } else if (action == GLFW_PRESS && key == GLFW_KEY_C && myCatanBoard.click == false) {
 
             myCatanBoard.click = true;
-            myCatanBoard.players[whichPlayer].gameConds[PLACE_CITY_COND] = true;
+            myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_CITY_COND] = true;
             reset = true;
 
         // purchase a developement card
@@ -202,34 +200,41 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
             for (int i = 0; i < TOTAL_GAMEPLAY_CONDITIONS; ++i) {
 
-                if (myCatanBoard.players[whichPlayer].gameConds[i]) {
+                if (myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i]) {
 
                     switch (i) {
 
-                        case NEXT_TURN_COND:    // N
+                        case NEXT_TURN_COND:    // N   FIX THIS
 
                             ++myCatanBoard.turn;
                             myCatanBoard.turnStructureIndex = myCatanBoard.turn % 3;
-                            printf("next turn: %s's turn\n\n", playerColors[whichPlayer]);
-                            myCatanBoard.players[whichPlayer].gameConds[i] = false;
+                            if (myCatanBoard.turnStructureIndex == 0) {
+
+                                myCatanBoard.whichPlayer = 
+
+                            }
+
+
+                            printf("next turn: %s's turn\n\n", playerColors[myCatanBoard.whichPlayer]);
+                            myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
                             break;
 
                         case PLACE_ROAD_COND:   // R
 
-                            if (myCatanBoard.players[whichPlayer].playerRoadsInHand) {    // && hasResourcesInHand(ROAD)
+                            if (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsInHand) {    // && hasResourcesInHand(ROAD)
 
                                 printf("press a road button on screen to place\npress q to cancel road placement\n\n");
                                 while (action != GLFW_PRESS && key != GLFW_KEY_Q) {
                                     
                                     glfwPollEvents();
 
-                                    if (myCatanBoard.players[whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
+                                    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
 
                                         myCatanBoard.click = true;
-                                        myCatanBoard.players[whichPlayer].gameConds[i] = false;
-                                        myCatanBoard.players[whichPlayer].playerRoadLocations[myCatanBoard.players[whichPlayer].playerRoadsOnBoard] = myCatanBoard.players[whichPlayer].whichRoadButtonPressed;
-                                        --myCatanBoard.players[whichPlayer].playerRoadsInHand;     // use current player's playerPiecesInHand
-                                        ++myCatanBoard.players[whichPlayer].playerRoadsOnBoard;
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsOnBoard] = myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed;
+                                        --myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsInHand;     // use current player's playerPiecesInHand
+                                        ++myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsOnBoard;
                                         /*
 
                                         takeRCardsPlayerHand(ROAD);  // use game's resource card deck
@@ -241,29 +246,29 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
                                 }
 
-                                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
-                                myCatanBoard.players[whichPlayer].gameConds[i] = false;
-                                printf("road #%d placed for %s player at road button location #%d\n\n", myCatanBoard.players[whichPlayer].playerTownsOnBoard, playerColors[whichPlayer], myCatanBoard.players[whichPlayer].whichRoadButtonPressed);
+                                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
+                                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                printf("road #%d placed for %s player at road button location #%d\n\n", myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard, playerColors[myCatanBoard.whichPlayer], myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed);
 
                             }
                             break;
 
                         case PLACE_TOWN_COND:   // T
                         
-                            if (myCatanBoard.players[whichPlayer].playerTownsInHand) {    // && hasResourcesInHand(TOWN)
+                            if (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsInHand) {    // && hasResourcesInHand(TOWN)
 
                                 printf("press a settlement button on screen to place\npress q to cancel town placement\n\n");
                                 while (action != GLFW_PRESS && key != GLFW_KEY_Q) {
                                     
                                     glfwPollEvents();
 
-                                    if (myCatanBoard.players[whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
+                                    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
 
                                         myCatanBoard.click = true;
-                                        myCatanBoard.players[whichPlayer].gameConds[i] = false; 
-                                        myCatanBoard.players[whichPlayer].playerTownLocations[myCatanBoard.players[whichPlayer].playerTownsOnBoard] = myCatanBoard.players[whichPlayer].whichSettlementButtonPressed;
-                                        --myCatanBoard.players[whichPlayer].playerTownsInHand;
-                                        ++myCatanBoard.players[whichPlayer].playerTownsOnBoard;
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false; 
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard] = myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed;
+                                        --myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsInHand;
+                                        ++myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard;
                                         /*
 
                                         takeRCardsPlayerHand(TOWN);  // use game's resource card deck
@@ -275,31 +280,31 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
                                 }
 
-                                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
-                                myCatanBoard.players[whichPlayer].gameConds[i] = false;
-                                printf("town #%d placed for %s player at settlement button location #%d\n\n", myCatanBoard.players[whichPlayer].playerTownsOnBoard, playerColors[whichPlayer], myCatanBoard.players[whichPlayer].whichSettlementButtonPressed);
+                                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                printf("town #%d placed for %s player at settlement button location #%d\n\n", myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard, playerColors[myCatanBoard.whichPlayer], myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed);
 
                             }
                             break;
 
                         case PLACE_CITY_COND:   // C
 
-                            if (myCatanBoard.players[whichPlayer].playerCitiesInHand) {    // && hasResourcesInHand(CITY)
+                            if (myCatanBoard.players[myCatanBoard.whichPlayer].playerCitiesInHand) {    // && hasResourcesInHand(CITY)
 
                                 printf("press a road button on screen to place\npress q to cancel road placement\n\n");
                                 while (action != GLFW_PRESS && key != GLFW_KEY_Q) {
 
                                     glfwPollEvents();
 
-                                    if (myCatanBoard.players[whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
+                                    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
 
                                         myCatanBoard.click = true;
-                                        myCatanBoard.players[whichPlayer].gameConds[i] = false;
-                                        myCatanBoard.players[whichPlayer].playerCityLocations[myCatanBoard.players[whichPlayer].playerCitiesOnBoard] = myCatanBoard.players[whichPlayer].whichSettlementButtonPressed;
-                                        --myCatanBoard.players[whichPlayer].playerCitiesInHand;
-                                        ++myCatanBoard.players[whichPlayer].playerCitiesOnBoard;
-                                        --myCatanBoard.players[whichPlayer].playerTownsOnBoard;
-                                        ++myCatanBoard.players[whichPlayer].playerTownsInHand;
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                        myCatanBoard.players[myCatanBoard.whichPlayer].playerCityLocations[myCatanBoard.players[myCatanBoard.whichPlayer].playerCitiesOnBoard] = myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed;
+                                        --myCatanBoard.players[myCatanBoard.whichPlayer].playerCitiesInHand;
+                                        ++myCatanBoard.players[myCatanBoard.whichPlayer].playerCitiesOnBoard;
+                                        --myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard;
+                                        ++myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsInHand;
                                         /*
 
                                         takeRCardsPlayerHand(CITY);  // use game's resource card deck
@@ -311,9 +316,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
                                 }
 
-                                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
-                                myCatanBoard.players[whichPlayer].gameConds[i] = false;
-                                printf("road #%d placed for %s player at road button location #%d\n\n", myCatanBoard.players[whichPlayer].playerTownsOnBoard, playerColors[whichPlayer], myCatanBoard.players[whichPlayer].whichSettlementButtonPressed);
+                                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                printf("road #%d placed for %s player at road button location #%d\n\n", myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard, playerColors[myCatanBoard.whichPlayer], myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed);
 
                             }
                             break;
@@ -325,11 +330,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
                             if (hasResourcesInHand(GENERIC_DEV_CARD)) {
 
                                 popDev();
-                                ++myCatanBoard.players[myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex]].playerDevCardCount;
+                                ++myCatanBoard.players[myCatanBoard.whichPlayer].playerDevCardCount;
                                 takeRCardsPlayerHand(TOWN);  // use game's resource card deck
                                 placeRCardsGameDeck(TOWN);   // use game's resource card deck
-                                myCatanBoard.players[myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex]].gameConds[i] = false;
-                                printf("%s player bought their #%d development card.\n\n", playerColor[myCatanBoard.players[myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex]]], myCatanBoard.players[myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex]].playerDevCardCount);
+                                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[i] = false;
+                                printf("%s player bought their #%d development card.\n\n", playerColor[myCatanBoard.players[myCatanBoard.whichPlayer]], myCatanBoard.players[myCatanBoard.whichPlayer].playerDevCardCount);
 
                             }
                             */
@@ -370,7 +375,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 // towns: is the placed town's location unique to any town or city currently on the board?
 // cities: is the placed city's location unique to any town or city currently on the board?
 //
-static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece) {
+static bool isLocationUnique(enum pieceEnum whichPiece) {
 
     bool isUnique = true;
 
@@ -386,7 +391,7 @@ static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece) {
 
                 }
 
-                isUnique = (myCatanBoard.players[i].playerRoadLocations[j] == myCatanBoard.players[whichPlayer].whichRoadButtonPressed ? false : true);
+                isUnique = (myCatanBoard.players[i].playerRoadLocations[j] == myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed ? false : true);
                 if (!isUnique) {
 
                     return false;
@@ -409,7 +414,7 @@ static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece) {
 
                 }
 
-                isUnique = (myCatanBoard.players[i].playerTownLocations[j] == myCatanBoard.players[whichPlayer].whichSettlementButtonPressed ? false : true);
+                isUnique = (myCatanBoard.players[i].playerTownLocations[j] == myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed ? false : true);
                 if (!isUnique) {
 
                     return false;
@@ -432,7 +437,7 @@ static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece) {
 
                 }
 
-                isUnique = (myCatanBoard.players[i].playerCityLocations[j] == myCatanBoard.players[whichPlayer].whichSettlementButtonPressed ? false : true);
+                isUnique = (myCatanBoard.players[i].playerCityLocations[j] == myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed ? false : true);
                 if (!isUnique) {
 
                     return false;
@@ -453,13 +458,13 @@ static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece) {
 //
 // is the road adjacent to another road
 //
-static bool isRoadAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiece) {
+static bool isRoadAdjacentToSettlement(enum pieceEnum whichPiece) {
 
     bool isAdjacentToSettlement = false;
 
-    if (myCatanBoard.players[whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
+    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
 
-        int *localTownOrCityArray = (whichPiece == TOWN ? myCatanBoard.players[whichPlayer].playerTownLocations : myCatanBoard.players[whichPlayer].playerCityLocations); 
+        int *localTownOrCityArray = (whichPiece == TOWN ? myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations : myCatanBoard.players[myCatanBoard.whichPlayer].playerCityLocations); 
 
         for (int i = 0; i < NUM_TOWNS_PER_PLAYER; ++i) {
 
@@ -470,13 +475,13 @@ static bool isRoadAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiec
             }
 
             // check both settlement spots adjacent to the player's road placement against each of player's town spots
-            isAdjacentToSettlement = (myCatanBoard.roadToSettlementAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][0] == localTownOrCityArray[i] ? true : false);
+            isAdjacentToSettlement = (myCatanBoard.roadToSettlementAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][0] == localTownOrCityArray[i] ? true : false);
             if (isAdjacentToSettlement) {
 
                 return isAdjacentToSettlement;
 
             }
-            isAdjacentToSettlement = (myCatanBoard.roadToSettlementAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][1] == localTownOrCityArray[i] ? true : false);
+            isAdjacentToSettlement = (myCatanBoard.roadToSettlementAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][1] == localTownOrCityArray[i] ? true : false);
             if (isAdjacentToSettlement) {
 
                 return isAdjacentToSettlement;
@@ -495,34 +500,34 @@ static bool isRoadAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiec
 //
 // is the road placement adjacent to a road
 //
-static bool isRoadAdjacentToRoad(int whichPlayer) {
+static bool isRoadAdjacentToRoad() {
 
     bool isAdjacentToRoad = false;
 
-    if (myCatanBoard.players[whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
+    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
 
         for (int i = 0; i < NUM_ROADS_PER_PLAYER; ++i) {
 
             // check all four road spots adjacent to the player's road placement against each of player's road spots
-            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][0] == myCatanBoard.players[whichPlayer].playerRoadLocations[i] ? true : false);
+            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][0] == myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[i] ? true : false);
             if (isAdjacentToRoad) {
 
                 return isAdjacentToRoad;
 
             }
-            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][1] == myCatanBoard.players[whichPlayer].playerRoadLocations[i] ? true : false);
+            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][1] == myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[i] ? true : false);
             if (isAdjacentToRoad) {
 
                 return isAdjacentToRoad;
 
             }        
-            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][2] == myCatanBoard.players[whichPlayer].playerRoadLocations[i] ? true : false);
+            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][2] == myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[i] ? true : false);
             if (isAdjacentToRoad) {
 
                 return isAdjacentToRoad;
 
             }
-            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[whichPlayer].whichRoadButtonPressed][3] == myCatanBoard.players[whichPlayer].playerRoadLocations[i] ? true : false);
+            isAdjacentToRoad = (myCatanBoard.roadToRoadAdjacencyArray[myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed][3] == myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[i] ? true : false);
             if (isAdjacentToRoad) {
 
                 return isAdjacentToRoad;
@@ -541,11 +546,11 @@ static bool isRoadAdjacentToRoad(int whichPlayer) {
 //
 // is settlement adjacent to any town? is settlement adjacent to any city?
 //
-static bool isSettlementAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiece) {
+static bool isSettlementAdjacentToSettlement(enum pieceEnum whichPiece) {
 
     bool isAdjacentToSettlement = false;
 
-    if (myCatanBoard.players[whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
+    if (myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
 
         int *localTownOrCityArray = NULL;
         int t1 = DUMMY_VALUE;
@@ -570,19 +575,19 @@ static bool isSettlementAdjacentToSettlement(int whichPlayer, enum pieceEnum whi
                 t2 = myCatanBoard.settlementToSettlementAdjacencyArray[localTownOrCityArray[k]][1];
                 t3 = myCatanBoard.settlementToSettlementAdjacencyArray[localTownOrCityArray[k]][2];
 
-                isAdjacentToSettlement = (t1 == myCatanBoard.players[whichPlayer].whichSettlementButtonPressed ? true : false);
+                isAdjacentToSettlement = (t1 == myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed ? true : false);
                 if (isAdjacentToSettlement) {
 
                     return isAdjacentToSettlement;
 
                 }
-                isAdjacentToSettlement = (t2 == myCatanBoard.players[whichPlayer].whichSettlementButtonPressed ? true : false);
+                isAdjacentToSettlement = (t2 == myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed ? true : false);
                 if (isAdjacentToSettlement) {
 
                     return isAdjacentToSettlement;
 
                 }
-                isAdjacentToSettlement = (t3 == myCatanBoard.players[whichPlayer].whichSettlementButtonPressed ? true : false);
+                isAdjacentToSettlement = (t3 == myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed ? true : false);
                 if (isAdjacentToSettlement) {
 
                     return isAdjacentToSettlement;
@@ -605,14 +610,13 @@ static bool isSettlementAdjacentToSettlement(int whichPlayer, enum pieceEnum whi
 //
 static bool processPreGamePlayerActions(GLFWwindow* window) {
 
-    int whichPlayer = myCatanBoard.gameTurnStructure[myCatanBoard.turnStructureIndex] - 1;
     bool ret = true;
     bool unique = false;
     bool adjacent = false;
 
-    if (myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND]) {
+    if (myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND]) {
 
-        while (myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND]) {
+        while (myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND]) {
 
             glfwPollEvents();
 
@@ -623,17 +627,17 @@ static bool processPreGamePlayerActions(GLFWwindow* window) {
 
             }
 
-            if (myCatanBoard.players[whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
+            if (myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed != DUMMY_VALUE) {
 
-                unique = isLocationUnique(whichPlayer, ROAD);
-                adjacent = isRoadAdjacentToSettlement(whichPlayer, TOWN);
+                unique = isLocationUnique(ROAD);
+                adjacent = isRoadAdjacentToSettlement(TOWN);
 
                 if (unique && adjacent) {
 
-                    myCatanBoard.players[whichPlayer].playerRoadLocations[myCatanBoard.players[whichPlayer].playerRoadsOnBoard] = myCatanBoard.players[whichPlayer].whichRoadButtonPressed;
-                    myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND] = false;
-                    ++myCatanBoard.players[whichPlayer].playerRoadsOnBoard;
-                    --myCatanBoard.players[whichPlayer].playerRoadsInHand;
+                    myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsOnBoard] = myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed;
+                    myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND] = false;
+                    ++myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsOnBoard;
+                    --myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadsInHand;
                     break;
 
                 }
@@ -642,9 +646,9 @@ static bool processPreGamePlayerActions(GLFWwindow* window) {
 
         }
 
-    } else if (myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND]) {
+    } else if (myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND]) {
 
-        while (myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND]) {
+        while (myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND]) {
 
             glfwPollEvents();
 
@@ -655,17 +659,17 @@ static bool processPreGamePlayerActions(GLFWwindow* window) {
 
             }
 
-            if (myCatanBoard.players[whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
+            if (myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed != DUMMY_VALUE) {
 
-                unique = isLocationUnique(whichPlayer, TOWN);
-                adjacent = isSettlementAdjacentToSettlement(whichPlayer, TOWN);
+                unique = isLocationUnique(TOWN);
+                adjacent = isSettlementAdjacentToSettlement(TOWN);
 
                 if (unique && !adjacent) {
 
-                    myCatanBoard.players[whichPlayer].playerTownLocations[myCatanBoard.players[whichPlayer].playerTownsOnBoard] = myCatanBoard.players[whichPlayer].whichSettlementButtonPressed;
-                    myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND] = false;
-                    ++myCatanBoard.players[whichPlayer].playerTownsOnBoard;
-                    --myCatanBoard.players[whichPlayer].playerTownsInHand;
+                    myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard] = myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed;
+                    myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND] = false;
+                    ++myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsOnBoard;
+                    --myCatanBoard.players[myCatanBoard.whichPlayer].playerTownsInHand;
                     break;
 
                 }
@@ -993,59 +997,76 @@ static void popDev(enum dCardEnum* ddeck, enum dCardEnum dcard) {
 
 
 //
-// popRes for obtaining resource cards from bank
+// pop a resource card from a player deck
 //
-static void popRes(enum rCardEnum* rdeck, enum rCardEnum rcard) {
+static bool popRes(enum rCardEnum* rdeck, enum rCardEnum rcard) {
 
     int indexToRemove = 0;
-    int startIndex = (rcard == BRICK ? 0 : (rcard == WOOD ? 19 : (rcard == SHEEP ? 38 : (rcard == WHEAT ? 57 : (rcard == ORE ? 76 : 100)))));
+    int startIndex = (rcard == BRICK ? 0 : (rcard == WOOD ? 19 : (rcard == SHEEP ? 38 : (rcard == WHEAT ? 57 : (rcard == ORE ? 76 : DUMMY_VALUE)))));
     
-    if (startIndex == 100) {
+    if (startIndex == DUMMY_VALUE) {
 
-        return;
+        return false;
 
     }
 
+    // only tests for 1-17 inclusive, because for position 0 cant do i-1, and for position 18 you cant test for RES_NONE is position 19 b/c it doesnt exist
     for (int i = 0; i < 19; ++i) {
 
-        if (rdeck[i] == RES_NONE) {
+        if (i > 0 && rdeck[i] == RES_NONE) {
 
             rcard = rdeck[i - 1];
-            indexToRemove = i - 1;
-
-        } else if (rdeck[i] != RES_NONE) {
-
-            rcard = rdeck[i];
-            indexToRemove = i;
+            rdeck[i - 1] = RES_NONE;
 
         }
 
     }
 
-    rdeck[indexToRemove] = RES_NONE;
+    // if the returned resource card is still empty, and 18 position in rdeck is not RES_NONE, take that card
+    if (rcard == RES_NONE && rdeck[18] != RES_NONE) {
 
-    return;
+        rcard = rdeck[18];
+        rdeck[18] = RES_NONE;
+
+    // if the returned resource card is still empty, and 0 position in rdeck is not RES_NONE, take that card
+    } else if (rcard == RES_NONE && rdeck[0] != RES_NONE) {
+
+        rcard = rdeck[0];
+        rdeck[0] = RES_NONE;
+
+    }
+
+    return true;
 
 }
 
 
 //
-// push resource card
+// push resource card to a deck
 //
-static void pushRes(enum rCardEnum* rdeck, enum rCardEnum rcard) {
+static bool pushRes(enum rCardEnum* rdeck, enum rCardEnum rcard) {
 
-    int startIndex = (rcard == BRICK ? 0 : (rcard == WOOD ? 19 : (rcard == SHEEP ? 38 : (rcard == WHEAT ? 57 : (rcard == ORE ? 76 : 100)))));
+    int startIndex = (rcard == BRICK ? 0 : (rcard == WOOD ? 19 : (rcard == SHEEP ? 38 : (rcard == WHEAT ? 57 : (rcard == ORE ? 76 : DUMMY_VALUE)))));
+
+    if (startIndex == DUMMY_VALUE) {
+
+        return false;
+
+    }
+
     for (int i = 0; i < 19; ++i) {
 
         if (rdeck[startIndex + i] == RES_NONE) {
 
             rdeck[startIndex + i] = rcard;
 
+            break;
+
         }
 
     }
 
-    return;
+    return true;
 
 }
 
@@ -1192,14 +1213,35 @@ static void setupPlayers() {
 
     }
 
-    myCatanBoard.isPregame = true;
+    enum rCardEnum* hT = myCatanBoard.hexagons.hexTypes;
+    // 54 total
+    enum rCardEnum localSettlementToHexagonArray[NUM_SETTLEMENT_BUTTONS][3] = {{hT[0], hT[1], hT[2]}, {hT[3], hT[0], hT[2]}, {hT[4], hT[0], hT[3]}, {hT[4], hT[5], hT[0]}, {hT[5], hT[6], hT[0]},       \
+    {hT[0], hT[6], hT[1]}, {hT[1], hT[7], hT[8]}, {hT[2], hT[1], hT[8]}, {hT[1], hT[6], hT[18]}, {hT[1], hT[18], hT[7]}, {hT[9], hT[2], hT[8]}, {hT[10], hT[2], hT[9]}, {hT[10], hT[3], hT[9]},         \
+    {hT[11], hT[3], hT[10]}, {hT[11], hT[12], hT[3]}, {hT[12], hT[4], hT[3]}, {hT[12], hT[13], hT[4]}, {hT[13], hT[14], hT[4]}, {hT[4], hT[14], hT[5]}, {hT[14], hT[15], hT[5]},                        \
+    {hT[5], hT[15], hT[16]}, {hT[5], hT[16], hT[6]}, {hT[6], hT[16], hT[17]}, {hT[6], hT[17], hT[18]}, {RES_NONE, hT[7], RES_NONE}, {hT[8], hT[7], RES_NONE}, {hT[7], hT[18], RES_NONE},                \
+    {hT[7], RES_NONE, RES_NONE}, {RES_NONE, hT[8], RES_NONE}, {hT[9], hT[8], RES_NONE}, {RES_NONE, hT[9], RES_NONE}, {RES_NONE, hT[9], RES_NONE},                                                       \
+    {RES_NONE, hT[10], hT[9]}, {RES_NONE, hT[10], RES_NONE}, {RES_NONE, hT[11], hT[10]}, {RES_NONE, hT[11], RES_NONE}, {RES_NONE, RES_NONE, hT[11]},                                                    \
+    {RES_NONE, hT[12], hT[11]}, {RES_NONE, RES_NONE, hT[12]}, {RES_NONE, hT[13], hT[12]}, {RES_NONE, RES_NONE, hT[13]}, {RES_NONE, RES_NONE, hT[13]},                                                   \
+    {hT[13], RES_NONE, hT[14]}, {RES_NONE, RES_NONE, hT[14]}, {hT[14], RES_NONE, hT[15]}, {RES_NONE, RES_NONE, hT[15]}, {hT[15], RES_NONE, RES_NONE},                                                   \
+    {hT[15], RES_NONE, hT[16]}, {hT[16], RES_NONE, RES_NONE}, {hT[16], RES_NONE, hT[17]}, {hT[18], hT[17], RES_NONE}, {hT[17], RES_NONE, RES_NONE},                                                     \
+    {hT[17], RES_NONE, RES_NONE}, {hT[18], RES_NONE, RES_NONE}};
 
+    for (int i = 0; i < NUM_SETTLEMENT_BUTTONS; ++i) {
+
+        myCatanBoard.hexagons.settlementToHexagonArray[i][0] = localSettlementToHexagonArray[i][0];
+        myCatanBoard.hexagons.settlementToHexagonArray[i][1] = localSettlementToHexagonArray[i][1];
+        myCatanBoard.hexagons.settlementToHexagonArray[i][2] = localSettlementToHexagonArray[i][2];
+
+    }
+
+    myCatanBoard.isPregame = true;
     myCatanBoard.click = false;
     myCatanBoard.confirmClick = false;
 
     return;
 
 }
+
 
 //
 //
@@ -1496,10 +1538,9 @@ int main(int argc, char* argv[]) {
 
     GLdouble xpos = 0.0f;
     GLdouble ypos = 0.0f;
-    bool turnDone = false, decideTurnStructureUnfinished = true;
+    bool turnDone = false, result = true, decideTurnStructureUnfinished = true;
     myCatanBoard.turn = 0;
     enum gameplayConditionsEnum gameCondsIndex;
-    int whichPlayer = 0;
     srand(time(NULL));
 
     // Main loop
@@ -1571,53 +1612,52 @@ int main(int argc, char* argv[]) {
         // pre game logic starts here
         //
 
-        // decide turn structure for this game -- NOT WORKING
-        if (decideTurnStructureUnfinished == true) {
+        // decide turn structure for this game -- WORKS
+        if (myCatanBoard.isPregame == true) {
             
             bool reroll[3] = {true, true, true};
-            int playerTurnStructure = 0;
             while (decideTurnStructureUnfinished) {
 
                 // roll
                 if (reroll[0]) {
                     
                     myCatanBoard.players[0].currentRoll = DICEROLL() + DICEROLL();
+                    reroll[0] = false;
                 
-                } else if (reroll[1]) {
+                }
+                if (reroll[1]) {
 
                     myCatanBoard.players[1].currentRoll = DICEROLL() + DICEROLL();
+                    reroll[1] = false;
 
-                } else if (reroll[2]) {
+                }
+                if (reroll[2]) {
 
                     myCatanBoard.players[2].currentRoll = DICEROLL() + DICEROLL();
+                    reroll[2] = false;
 
                 }
 
-                // sort
-                reroll[0] = false;
-                reroll[1] = false;
-                reroll[2] = false;                
                 for (int i = 0; i < 3; ++i) {
 
-                    if (myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 1) % 3].currentRoll && myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 2) % 3].currentRoll) {
+                    if (myCatanBoard.players[i].currentRoll == myCatanBoard.players[(i + 1) % 3].currentRoll) {
 
-                        playerTurnStructure = 1;
+                        reroll[i] = true;
+                        continue;
+
+                    } else if (myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 1) % 3].currentRoll && myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 2) % 3].currentRoll) {
+
+                        myCatanBoard.gameTurnStructure[i] = 1;
 
                     } else if (myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 1) % 3].currentRoll || myCatanBoard.players[i].currentRoll > myCatanBoard.players[(i + 2) % 3].currentRoll) {
 
-                        playerTurnStructure = 2;
+                        myCatanBoard.gameTurnStructure[i] = 2;
 
                     } else if (myCatanBoard.players[i].currentRoll < myCatanBoard.players[(i + 1) % 3].currentRoll && myCatanBoard.players[i].currentRoll < myCatanBoard.players[(i + 2) % 3].currentRoll) {
 
-                        playerTurnStructure = 3;
-
-                    } else if (myCatanBoard.players[i].currentRoll == myCatanBoard.players[(i + 1) % 3].currentRoll) {
-
-                        reroll[i] = true;
+                        myCatanBoard.gameTurnStructure[i] = 3;
 
                     }
-
-                    myCatanBoard.gameTurnStructure[i] = playerTurnStructure;
 
                 }
 
@@ -1633,95 +1673,160 @@ int main(int argc, char* argv[]) {
 
             // preGameReturnValue: false == returned normally, true == window needs to close
             bool preGameReturnValue = false;
+            enum rCardEnum rCard[3];
             // pre game sequence: setup towns and roads -- WORKS
             for (int i = 0; i < 3; ++i) {
 
-                whichPlayer = myCatanBoard.gameTurnStructure[i] - 1;
+                if ((myCatanBoard.gameTurnStructure[0] - 1) == i) {
 
-                printf("%s player's turn.\n\n", playerColors[whichPlayer]);
+                    myCatanBoard.whichPlayer = 0;
+
+                    printf("%s player's turn.\n\n", playerColors[myCatanBoard.whichPlayer]);
+
+                } else if ((myCatanBoard.gameTurnStructure[1] - 1) == i) {
+
+                    myCatanBoard.whichPlayer = 1;
+
+                    printf("%s player's turn.\n\n", playerColors[myCatanBoard.whichPlayer]);
+
+                } else if ((myCatanBoard.gameTurnStructure[2] - 1) == i) {
+
+                    myCatanBoard.whichPlayer = 2;
+
+                    printf("%s player's turn.\n\n", playerColors[myCatanBoard.whichPlayer]);
+
+                }
 
                 //
                 // players place town 1
                 //
-                printf("%s player : place first town\n\n", playerColors[whichPlayer]);
+                printf("%s player : place first town\n\n", playerColors[myCatanBoard.whichPlayer]);
                 
-                myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND] = true;
+                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND] = true;
                 preGameReturnValue = processPreGamePlayerActions(window);
                 if (!preGameReturnValue) {
 
-                    decideTurnStructureUnfinished = false;
+                    // player wants to exit, break, set myCatanBoard.isPregame to false, exit preGame
                     break;
 
                 }
-                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
-                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
 
                 char road1[8], road2[8], town1[8], town2[8];
-                sprintf(town1, "%d", (myCatanBoard.players[whichPlayer].playerTownLocations[0]));                
-                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", whichPlayer, (myCatanBoard.players[whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
+                sprintf(town1, "%d", (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[0]));                
+                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", myCatanBoard.whichPlayer, (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
 
                 //
                 // players place road 1
                 //
-                printf("%s player : place first road\n\n", playerColors[whichPlayer]);
+                printf("%s player : place first road\n\n", playerColors[myCatanBoard.whichPlayer]);
                 
-                myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND] = true;
+                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND] = true;
                 preGameReturnValue = processPreGamePlayerActions(window);
                 if (!preGameReturnValue) {
 
-                    decideTurnStructureUnfinished = false;
                     break;
 
                 }
-                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
-                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
 
-                sprintf(road1, "%d", (myCatanBoard.players[whichPlayer].playerRoadLocations[0]));
-                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", whichPlayer, (myCatanBoard.players[whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
+                sprintf(road1, "%d", (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[0]));
+                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", myCatanBoard.whichPlayer, (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
 
                 //
                 // players place town 2
                 //
-                printf("%s player : place second town\n\n", playerColors[whichPlayer]);
+                printf("%s player : place second town\n\n", playerColors[myCatanBoard.whichPlayer]);
                 
-                myCatanBoard.players[whichPlayer].gameConds[PLACE_TOWN_COND] = true;
+                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_TOWN_COND] = true;
                 preGameReturnValue = processPreGamePlayerActions(window);
                 if (!preGameReturnValue) {
 
-                    decideTurnStructureUnfinished = false;
                     break;
 
                 }
-                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
-                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
 
-                sprintf(town2, "%d", (myCatanBoard.players[whichPlayer].playerTownLocations[1]));
-                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", whichPlayer, (myCatanBoard.players[whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
+                sprintf(town2, "%d", (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]));
+                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", myCatanBoard.whichPlayer, (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
 
                 //
                 // players place road 2
                 //
-                printf("%s player : place second road\n\n", playerColors[whichPlayer]);
+                printf("%s player : place second road\n\n", playerColors[myCatanBoard.whichPlayer]);
 
-                myCatanBoard.players[whichPlayer].gameConds[PLACE_ROAD_COND] = true;                    
+                myCatanBoard.players[myCatanBoard.whichPlayer].gameConds[PLACE_ROAD_COND] = true;                    
                 preGameReturnValue = processPreGamePlayerActions(window);
                 if (!preGameReturnValue) {
 
-                    decideTurnStructureUnfinished = false;
                     break;
 
                 }
-                myCatanBoard.players[whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
-                myCatanBoard.players[whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichRoadButtonPressed = DUMMY_VALUE;
+                myCatanBoard.players[myCatanBoard.whichPlayer].whichSettlementButtonPressed = DUMMY_VALUE;
 
-                sprintf(road2, "%d", (myCatanBoard.players[whichPlayer].playerRoadLocations[1]));
-                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", whichPlayer, (myCatanBoard.players[whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
+                sprintf(road2, "%d", (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[1]));
+                printf("player #%d | road location 1: %s road location 2: %s, town location 1: %s town location 2: %s\n\n", myCatanBoard.whichPlayer, (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[0] == DUMMY_VALUE ? locationUnset : road1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerRoadLocations[1] == DUMMY_VALUE ? locationUnset : road2), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[0] == DUMMY_VALUE ? locationUnset : town1), (myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1] == DUMMY_VALUE ? locationUnset : town2));
+
+                rCard[0] = RES_NONE;
+                rCard[1] = RES_NONE;
+                rCard[2] = RES_NONE;
+                // players collect their cards from second town here
+                // if cards not RES_NONE, push resource to player's deck -- WORKS
+                if (myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][0] != RES_NONE) {
+
+                    rCard[0] = myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][0];
+                    result = pushRes(myCatanBoard.players[myCatanBoard.whichPlayer].playerResourceCards, rCard[0]);
+                    if (result) {
+
+                        printf("%s player's first card: %s\n", playerColors[myCatanBoard.whichPlayer], rCardNames[rCard[0]]);
+
+                    }
+
+                } else {
+
+                    printf("%s player's first card: NONE\n", playerColors[myCatanBoard.whichPlayer]);
+
+                }
+                if (myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][1] != RES_NONE) {
+
+                    rCard[1] = myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][1];
+                    result = pushRes(myCatanBoard.players[myCatanBoard.whichPlayer].playerResourceCards, rCard[1]);
+                    if (result) {
+                        
+                        printf("%s player's second card: %s\n", playerColors[myCatanBoard.whichPlayer], rCardNames[rCard[1]]);
+
+                    }
+
+                } else {
+
+                    printf("%s player's second card: NONE\n", playerColors[myCatanBoard.whichPlayer]);
+
+                }
+                if (myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][2] != RES_NONE) {
+
+                    rCard[2] = myCatanBoard.hexagons.settlementToHexagonArray[myCatanBoard.players[myCatanBoard.whichPlayer].playerTownLocations[1]][2];
+                    result = pushRes(myCatanBoard.players[myCatanBoard.whichPlayer].playerResourceCards, rCard[2]);
+                    if (result) {
+
+                        printf("%s player's third card: %s\n", playerColors[myCatanBoard.whichPlayer], rCardNames[rCard[2]]);
+
+                    }
+
+                } else {
+
+                    printf("%s player's third card: NONE\n", playerColors[myCatanBoard.whichPlayer]);
+
+                }
 
                 ++myCatanBoard.turn;
                 myCatanBoard.turnStructureIndex = myCatanBoard.turn % 3;
-                myCatanBoard.isPregame = false;
-
             }
+
+            myCatanBoard.isPregame = false;
 
         }
 
@@ -1736,6 +1841,7 @@ int main(int argc, char* argv[]) {
         //           'd' to initiate buying a dev card for current player
         //           'u' to initiate using of a dev card for current player
         //           'a' to initiate a trade between two players or with bank
+
 
     }
 

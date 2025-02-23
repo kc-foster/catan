@@ -1,3 +1,23 @@
+// Feb 23 2025
+// Unfinished
+// 
+// gcc -g3 -o catan catan.c -lGLEW -lglfw -lGL -lX11 -lm
+//
+
+// Catan Gameplay Instructions
+// ===============================================================
+// press a control button to initiate various game functions such as passing control to next player, 
+// or placing a road on the board if player has enough resource cards available.
+// Controls: 'q' to cancel any action
+//           'n' to forfeit players' turn for next player in queue
+//           'r' to initiate placing a road for the current player
+//           't' to initiate placing a town for the current player
+//           'c' to initiate placing a city for the current player
+//           'd' to initiate buying a dev card for current player
+//           'u' to initiate using of a dev card for current player
+//           'a' to initiate a trade between two players or with bank
+
+
 //
 // includes
 //
@@ -52,6 +72,41 @@
 #define TOVERTCOORDS(f, mouse_coords)           (f == 'x' ? (mouse_coords - (WIDTH / 2)) : (f == 'y' ? (mouse_coords - (HEIGHT / 2)) : 0.0f))
 #define DICEROLL()                              (rand() % 6 + 1)
 
+
+//
+// Error detection macro
+//
+#define CHECK_GL_ERROR()                                        \
+    do {                                                        \
+        GLenum err;                                             \
+        while ((err = glGetError()) != GL_NO_ERROR) {           \
+            switch (err) {                                      \
+                case GL_INVALID_ENUM:                           \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_enum);                        \
+                    break;                                                                                                                  \
+                case GL_INVALID_VALUE:                                                                                                      \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_value);                       \
+                    break;                                                                                                                  \
+                case GL_INVALID_OPERATION:                                                                                                  \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_operation);                   \
+                    break;                                                                                                                  \
+                case GL_INVALID_FRAMEBUFFER_OPERATION:                                                                                      \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_frame_buffer_operation);      \
+                    break;                                                                                                                  \
+                case GL_OUT_OF_MEMORY:                                                                                                      \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_out_of_memory);                       \
+                    break;                                                                                                                  \
+                case GL_STACK_UNDERFLOW:                                                                                                    \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_stack_underflow);                     \
+                    break;                                                                                                                  \
+                case GL_STACK_OVERFLOW:                                                                                                     \
+                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_stack_overflow);                      \
+                    break;                                                                                                                  \
+            }                                                                                                                               \
+        }                                                       \
+    } while (0)                                                 \
+
+
 // 
 // sources/data
 //
@@ -103,53 +158,21 @@ void main() {
 }
 )";
 
-//
-// Error detection macro
-//
-#define CHECK_GL_ERROR()                                        \
-    do {                                                        \
-        GLenum err;                                             \
-        while ((err = glGetError()) != GL_NO_ERROR) {           \
-            switch (err) {                                      \
-                case GL_INVALID_ENUM:                           \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_enum);                        \
-                    break;                                                                                                                  \
-                case GL_INVALID_VALUE:                                                                                                      \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_value);                       \
-                    break;                                                                                                                  \
-                case GL_INVALID_OPERATION:                                                                                                  \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_operation);                   \
-                    break;                                                                                                                  \
-                case GL_INVALID_FRAMEBUFFER_OPERATION:                                                                                      \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_invalid_frame_buffer_operation);      \
-                    break;                                                                                                                  \
-                case GL_OUT_OF_MEMORY:                                                                                                      \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_out_of_memory);                       \
-                    break;                                                                                                                  \
-                case GL_STACK_UNDERFLOW:                                                                                                    \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_stack_underflow);                     \
-                    break;                                                                                                                  \
-                case GL_STACK_OVERFLOW:                                                                                                     \
-                    printf("OpenGL Error [File: %s, Line: %d]: #%d %s\n", __FILE__, __LINE__, err, gl_stack_overflow);                      \
-                    break;                                                                                                                  \
-            }                                                                                                                               \
-        }                                                       \
-    } while (0)                                                 \
-
-
 
 // 
 // enums
 //
 enum dCardEnum { KNIGHTS = 0, VPS = 1, ROADS = 2, PLENTY = 3, MONOPOLY = 4, GENERIC_DEV_CARD = 5 };
 
-enum rCardEnum { BRICK = 6, WOOD = 7, SHEEP = 8, WHEAT = 9, ORE = 10, RES_NONE = 11 };
+enum rCardEnum { BRICK = 0, WOOD = 1, SHEEP = 2, WHEAT = 3, ORE = 4, RES_NONE = 5 };
 
-enum playerEnum { PLAYERONE = 12, PLAYERTWO = 13, PLAYERTHREE = 14 };
+const char* rCardNames[6] = {"BRICK", "WOOD", "SHEEP", "WHEAT", "ORE", "NONE"};
 
-enum pieceEnum { TOWN = 15, CITY = 16, ROAD = 17, PIECE_NONE = 18 };
+enum playerEnum { PLAYERONE = 0, PLAYERTWO = 1, PLAYERTHREE = 2 };
 
-enum vertEnum { GEOMETRY = 19, COLOR = 20, HEX_VALUE_CIRCLES = 21 };
+enum pieceEnum { TOWN = 0, CITY = 1, ROAD = 2, PIECE_NONE = 3 };
+
+enum vertEnum { GEOMETRY = 0, COLOR = 1, HEX_VALUE_CIRCLES = 2 };
 
 enum gameplayConditionsEnum { NEXT_TURN_COND = 0, PLACE_TOWN_COND = 1, PLACE_ROAD_COND = 2, PLACE_CITY_COND = 3, BUY_DCARD_COND = 4, USE_DCARD_COND = 5, INIT_TRADE_COND = 6, NONE_COND = 7 };
 
@@ -174,7 +197,6 @@ struct board {
     GLfloat boardRoadButtons[NUM_ROAD_BUTTONS * 2];                 // coordinates on the lines that board geometry forms 
     enum dCardEnum myDevCardDeck[TOTAL_DEV_CARD_COUNT];             // board developement card deck
     enum rCardEnum myResourceCardDeck[TOTAL_RESOURCE_CARD_COUNT];   // board resource card deck
-    int turnStructureIndex;                                         // used to calculate gameTurnStructure index once instead of in multiple places throughout game
     bool click, confirmClick;                                       // used for keyboard callback function for a detected key click and subsequent comfirmation click
     bool isPregame;
 
@@ -182,7 +204,9 @@ struct board {
     int roadToRoadAdjacencyArray[NUM_ROAD_BUTTONS][4];                          // space for road locations adjacent to any road
     int settlementToSettlementAdjacencyArray[NUM_SETTLEMENT_BUTTONS][3];        // space for settlement locations adjacent to any settlement
     int roadToSettlementAdjacencyArray[NUM_ROAD_BUTTONS][2];                    // space for settlement locations adjacent to any road
-    int gameTurnStructure[3];                                                   // the overall player turn structure created in main    
+    int turnStructureIndex;                                                     // used to calculate gameTurnStructure index once instead of in multiple places throughout game    
+    int gameTurnStructure[3];                                                   // the overall player turn structure created in main
+    enum playerEnum whichPlayer;                                                // which player is taking their turn
     int turn;                                                                   // raw number of turns taken by all players
 
     struct playerInfo {
@@ -190,7 +214,7 @@ struct board {
         // not useful to the artificial player
         enum playerEnum id;                                         // probably useless (TODO: DELETE?)
         int whichRoadButtonPressed, whichSettlementButtonPressed;   // the actual road/settlement button pressed by a player (TODO: CREATE A NUM->VERT MAPPING FOR THIS TO DISPLAY IN MAIN)
-
+        
         // useful to the artificial player
         // this player goes when?
         int playerTurnStructure;                                    // the place the player has in gameTurnStructure (TODO: MAKE LOCAL VAR?)
@@ -223,6 +247,7 @@ struct board {
         // useful to the artificial player
         enum rCardEnum hexTypes[HEXAGONS_TO_DRAW];                  // resource types for each hexagon
         int hexDiceValues[HEXAGONS_TO_DRAW];                        // random dice values
+        enum rCardEnum settlementToHexagonArray[NUM_SETTLEMENT_BUTTONS][3];     // something
 
     } hexagons;
 
@@ -236,15 +261,27 @@ struct board {
     } playerPieceCosts;
 
 } myCatanBoard;
+typedef struct board boardType;
 
 
+#ifdef ARTIFICIAL_CATAN_PLAYER
 //
-// prototypes -- forward declarations
+// prototypes for articifial catan player -- forward declarations
 //
-static bool isLocationUnique(int whichPlayer, enum pieceEnum whichPiece);
-static bool isRoadAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiece);
-static bool isRoadAdjacentToRoad(int whichPlayer);
-static bool isSettlementAdjacentToSettlement(int whichPlayer, enum pieceEnum whichPiece);
+static bool isLocationUnique(enum pieceEnum whichPiece);
+static bool isRoadAdjacentToSettlement(enum pieceEnum whichPiece);
+static bool isRoadAdjacentToRoad();
+static bool isSettlementAdjacentToSettlement(enum pieceEnum whichPiece);
+static void popDev(enum dCardEnum* ddeck, enum dCardEnum dcard);
+static bool popRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
+static bool pushRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
+
+#endif
+
+#ifdef CATAN_GAME
+//
+// prototypes for game -- forward declarations
+//
 static bool processPreGamePlayerActions(GLFWwindow* window);
 static void setHexagon(GLfloat* verts);
 static int setBoardVertices();
@@ -252,8 +289,16 @@ static void setSettlementButtons();
 static void setRoadButtons();
 static void setupDevCards();
 static void setupResourceCards();
-static void popDev(enum dCardEnum* ddeck, enum dCardEnum dcard);
-static void popRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
-static void pushRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
 static void setupPlayers();
 static int setBoardHexagons();
+
+static bool isLocationUnique(enum pieceEnum whichPiece);
+static bool isRoadAdjacentToSettlement(enum pieceEnum whichPiece);
+// TODO : USE THIS IN PROCESSPREGAMEPLAYERACTIONS()
+static bool isRoadAdjacentToRoad();
+static bool isSettlementAdjacentToSettlement(enum pieceEnum whichPiece);
+static void popDev(enum dCardEnum* ddeck, enum dCardEnum dcard);
+static bool popRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
+static bool pushRes(enum rCardEnum* rdeck, enum rCardEnum rcard);
+
+#endif
